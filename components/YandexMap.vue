@@ -74,6 +74,10 @@ function initMap() {
         overflow: hidden
 
 @include mobile
+    .map
+        &__container
+            min-height: 300px
+            aspect-ratio: 1/1
 
     .map-balloon
         padding: 10px

@@ -556,7 +556,7 @@ const submitBooking = () => {
     flex-direction: column
     gap: 20px
     background: $main-color
-    padding: 30px
+    padding: 20px
     border-radius: $radius
 
 .summary-title

@@ -23,6 +23,16 @@
           required
         ></textarea>
       </div>
+
+      <div v-if="photoPreview" class="photo-preview">
+        <div class="photo-preview__header">
+          <h4 class="font-text_medium">Загруженное фото</h4>
+          <button type="button" @click="removePhoto" class="photo-delete-btn">
+            <span class="photo-delete-icon">×</span>
+          </button>
+        </div>
+        <img :src="photoPreview" alt="Preview" class="preview-image" />
+      </div>
       
       <div class="form-group">
         <label for="reviewPhoto" class="btn">Выбрать фото (по желанию)</label>
@@ -33,11 +43,6 @@
           accept="image/*" 
           class="inp--file"
         />
-      </div>
-      
-      <!-- Photo Preview -->
-      <div v-if="photoPreview" class="photo-preview">
-        <img :src="photoPreview" alt="Preview" class="preview-image" />
       </div>
       
       <button type="submit" class="review-submit btn font-text_medium">Отправить</button>
@@ -70,6 +75,14 @@ const handlePhotoUpload = (event) => {
   }
 };
 
+const removePhoto = () => {
+  photoPreview.value = null;
+  formData.value.photo = '';
+  // Reset the file input
+  const fileInput = document.getElementById('reviewPhoto');
+  if (fileInput) fileInput.value = '';
+};
+
 const submitForm = () => {
   emit('submit', {...formData.value});
   resetForm();
@@ -95,7 +108,7 @@ const resetForm = () => {
   padding: 30px
   border-radius: $radius
   width: 100%
-  max-width: 500px
+  max-width: 80vh
 
 .review-modal-title
   background: $white
@@ -105,11 +118,16 @@ const resetForm = () => {
 
 .review-form
   display: flex
+  overflow-y: scroll
+  max-height: 70vh
   flex-direction: column
   gap: 20px
   
 .form-group
   display: flex
+  background: $white
+  padding: 10px
+  border-radius: $radius
   flex-direction: column
   gap: 5px
 
@@ -118,19 +136,48 @@ const resetForm = () => {
         display: none
   
   label.btn
-    font-weight: 600
+    padding: 5px 0px
     text-align: center
 
 .photo-preview
   text-align: center
   margin: 10px 0
+  background: $white
+  padding: 10px
+  border-radius: $radius
+  
+  &__header
+    display: flex
+    justify-content: space-between
+    align-items: center
+    margin-bottom: 10px
   
   .preview-image
     max-width: 100%
-    max-height: 200px
     border-radius: $radius
     border: 2px solid $main-color
-    
+
+.photo-delete-btn
+  background: $black
+  color: $white
+  border-radius: 50%
+  width: 24px
+  height: 24px
+  display: flex
+  align-items: center
+  justify-content: center
+  cursor: pointer
+  transition: all 0.3s ease
+  border: none
+  
+  &:hover
+    background: darken($black, 10%)
+    transform: scale(1.1)
+
+.photo-delete-icon
+  font-size: 18px
+  line-height: 1
+
 .review-submit
   background: $main-color
   padding: 12px 24px
