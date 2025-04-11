@@ -163,7 +163,6 @@ onMounted(() => {
 @import '@global'
 
 .loading-screen
-    height: 100vh
     background: $white
 
 .admin-section
