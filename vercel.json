@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "buildCommand": "yarn build",
+  "devCommand": "yarn dev",
+  "outputDirectory": ".output/public",
+  "framework": "nuxt",
+  "installCommand": "yarn install && yarn add @popperjs/core"
+}

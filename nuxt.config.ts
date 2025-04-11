@@ -51,4 +51,14 @@ export default defineNuxtConfig({
       ]
     }
   },
+  nitro: {
+    preset: 'vercel',
+  },
+  vite: {
+    build: {
+      rollupOptions: {
+        external: []
+      }
+    }
+  }
 })
