@@ -9,7 +9,7 @@
                 ногтевой сервис
             </h1>
             <p class="welcome__section-text font-text_large">
-                Любой вид маникюра и педикюра создаю специально для вас
+                Любой вид маникюра и педикюра создаём специально для вас
             </p>
             <NuxtLink to="/services">
                  <button class="welcome__section-btn btn font-text_extra-large">
@@ -35,7 +35,7 @@
                 <h3 class="price-list__master font-h3">{{ master.master }}</h3>
                 <ul class="price-list__services">
                     <li v-for="(service, serviceIndex) in master.services" :key="serviceIndex" class="price-list__service-item">
-                        <img class="price-list__service-img" :src="service.photo" alt="">
+                        <img class="price-list__service-img"  :src="service.photo || logoImage" alt="">
                         <div class="price-list__service-textblock">
                             <h4 class="price-list__service font-h4">{{ service.service }}</h4>
                             <p class="price-list__price .font-text_large">{{ service.price }} ₽</p>
@@ -50,6 +50,7 @@
 import data from '~/services/data.js'
 
 const priceListData = data.priceList()
+const logoImage = '/logo.png'
 </script>
 <style lang="sass">
 @import '@color'

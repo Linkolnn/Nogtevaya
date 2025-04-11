@@ -41,7 +41,7 @@
                             :class="{ 'service-item--selected': isServiceSelected(masterId, serviceId) }"
                             @click="toggleService(masterId, serviceId)"
                         >
-                            <img v-if="service.photo" :src="service.photo" alt="" class="service-image" />
+                            <img :src="service.photo || logoImage" alt="" class="service-image" />
                             <div class="service-info">
                                 <h3 class="service-name font-text_large">{{ service.service }}</h3>
                                 <div class="service-meta">
@@ -71,25 +71,29 @@
                     <p class="step-description font-text_medium">Выберите удобную дату и время для записи</p>
                 </div>
 
-                <div class="date-selection">
-                    <div 
-                        v-for="dateOption in availableDates" 
-                        :key="dateOption.date"
-                        class="date-option"
-                        :class="{ 'date-option--selected': selectedDate === dateOption.date }"
-                        @click="selectDate(dateOption.date)"
-                    >
-                        <p class="date-text font-text_medium">{{ dateOption.formattedDate }}</p>
-                    </div>
+                <div class="date-picker-container">
+                    <VDatePicker 
+                        v-model="selectedDate" 
+                        :min-date="new Date()"
+                        :max-date="maxDate"
+                        :attributes="calendarAttributes"
+                        is-required
+                        mode="single"
+                        @dayclick="handleDateClick"
+                        class="custom-datepicker"
+                        color="pink"
+                        multi-calendars
+                        :columns="isDesktop ? 2 : 1"
+                    />
                 </div>
 
-                <div v-if="selectedDate" class="time-selection">
+                <div v-if="selectedDate && selectedDateObj && selectedDateObj.isAvailable" class="time-selection">
                     <div class="time-title-container">
                         <h3 class="time-title font-text_medium">Доступное время:</h3>
                     </div>
                     <div class="time-slots">
                         <button
-                            v-for="timeSlot in availableTimeSlots"
+                            v-for="timeSlot in selectedDateObj.timeSlots"
                             :key="timeSlot"
                             type="button"
                             class="time-slot btn font-text_large"
@@ -98,6 +102,13 @@
                         >
                             {{ timeSlot }}
                         </button>
+                    </div>
+                </div>
+                
+                <div v-else-if="selectedDate && selectedDateObj && !selectedDateObj.isAvailable" class="time-selection time-selection--unavailable">
+                    <div class="time-title-container">
+                        <h3 class="time-title font-text_medium">Выбранная дата недоступна для записи</h3>
+                        <p class="font-text_medium">Пожалуйста, выберите другую дату</p>
                     </div>
                 </div>
             </div>
@@ -179,12 +190,42 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
 import data from '@/services/data.js';
+const logoImage = new URL('../assets/img/logo.png', import.meta.url).href
+// Window width tracking
+const windowWidth = ref(0);
+const isDesktop = ref(false);
+
+// Update window width on client side
+onMounted(() => {
+  // Set initial values
+  windowWidth.value = window.innerWidth;
+  updateIsDesktop();
+  
+  // Add resize listener
+  window.addEventListener('resize', () => {
+    windowWidth.value = window.innerWidth;
+    updateIsDesktop();
+  });
+});
+
+// Update desktop status based on media query
+function updateIsDesktop() {
+  if (process.client) {
+    isDesktop.value = window.matchMedia('(min-width: 859px)').matches;
+  }
+}
 
 // Get data from services
 const masters = data.priceList();
 const availableDates = data.availableDates();
+
+// Current month and year
+const currentDate = new Date();
+
+// Next month and year
+const nextMonthDate = new Date(currentDate);
+nextMonthDate.setMonth(currentDate.getMonth() + 1);
 
 // User selections
 const selectedMasters = ref([]);
@@ -198,17 +239,79 @@ const contactInfo = ref({
 });
 
 // Computed properties
-
 const totalPrice = computed(() => {
     return selectedServices.value.reduce((total, service) => {
         return total + service.price;
     }, 0);
 });
 
-const availableTimeSlots = computed(() => {
-    if (!selectedDate.value) return [];
-    const dateObj = availableDates.find(d => d.date === selectedDate.value);
-    return dateObj ? dateObj.timeSlots : [];
+// Set max date to 30 days from now
+const maxDate = new Date();
+maxDate.setDate(maxDate.getDate() + 30);
+
+// Calendar attributes for highlighting available dates
+const calendarAttributes = computed(() => {
+    return [
+        // Highlight available dates in green
+        {
+            key: 'available',
+            dates: availableDates.filter(date => date.isAvailable && new Date(date.date).getDay() !== 6).map(date => date.date),
+            highlight: {
+                backgroundColor: '#4CAF50',
+                opacity: 0.3
+            },
+            popover: {
+                label: 'Доступно для записи'
+            }
+        },
+        // Highlight Saturdays in a special color
+        {
+            key: 'saturday',
+            dates: availableDates.filter(date => date.isAvailable && new Date(date.date).getDay() === 6).map(date => date.date),
+            highlight: {
+                backgroundColor: '#FF9800', // Orange color for Saturday
+                opacity: 0.3
+            },
+            popover: {
+                label: 'Суббота: доступна запись с 11:00 до 17:00'
+            }
+        },
+        // Highlight unavailable dates in red
+        {
+            key: 'unavailable',
+            dates: availableDates.filter(date => !date.isAvailable).map(date => date.date),
+            highlight: {
+                backgroundColor: '#FF5252',
+                opacity: 0.3
+            },
+            popover: {
+                label: 'Недоступно для записи'
+            }
+        }
+    ];
+});
+
+// The selected date object from availableDates
+const selectedDateObj = computed(() => {
+    if (!selectedDate.value) return null;
+    
+    // Convert VDatePicker date object to YYYY-MM-DD format
+    let dateString;
+    if (typeof selectedDate.value === 'string') {
+        dateString = selectedDate.value;
+    } else if (selectedDate.value instanceof Date) {
+        const date = new Date(selectedDate.value);
+        // Ensure we're using local date
+        dateString = date.getFullYear() + '-' + 
+            String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(date.getDate()).padStart(2, '0');
+    } else {
+        return null;
+    }
+    
+    // Find the matching date in availableDates
+    const matchingDate = availableDates.find(d => d.date === dateString);
+    return matchingDate;
 });
 
 // Methods
@@ -264,9 +367,9 @@ const toggleService = (masterId, serviceId) => {
     }
 };
 
-const selectDate = (date) => {
-    selectedDate.value = date;
-    selectedTime.value = ''; // Reset time when date changes
+const handleDateClick = (day) => {
+    // Reset time when date changes
+    selectedTime.value = '';
 };
 
 const selectTime = (time) => {
@@ -275,13 +378,26 @@ const selectTime = (time) => {
 
 const getFormattedDate = (dateString) => {
     if (!dateString) return '';
+    
+    // Handle Date object from VDatePicker
+    if (dateString instanceof Date) {
+        dateString = dateString.toISOString().split('T')[0];
+    }
+    
     const date = availableDates.find(d => d.date === dateString);
     return date ? date.formattedDate : dateString;
 };
 
 const submitBooking = () => {
+    // Convert date to string format if it's a Date object
+    let dateString = selectedDate.value;
+    if (selectedDate.value instanceof Date) {
+        dateString = selectedDate.value.toISOString().split('T')[0];
+    }
+    
     // Prepare booking data
     const bookingData = {
+        id: Date.now(), // Unique ID for the order based on timestamp
         masters: selectedMasters.value.map(masterId => {
             return {
                 id: masterId,
@@ -296,15 +412,18 @@ const submitBooking = () => {
                 price: service.price
             };
         }),
-        date: selectedDate.value,
+        date: dateString,
         formattedDate: getFormattedDate(selectedDate.value),
         time: selectedTime.value,
         totalPrice: totalPrice.value,
-        contactInfo: {...contactInfo.value}
+        contactInfo: {...contactInfo.value},
+        createdAt: new Date().toISOString() // Add creation timestamp
     };
     
-    // Here you would typically send this data to a server
-    console.log('Booking submitted:', bookingData);
+    // Save order to cookie
+    saveOrderToCookie(bookingData);
+    
+    // Here you would typically send this data to a
     
     // Show success message
     alert('Запись успешно оформлена! Мы свяжемся с вами в ближайшее время.');
@@ -319,6 +438,35 @@ const submitBooking = () => {
         phone: '',
         comments: ''
     };
+};
+
+// Function to save order to cookie
+const saveOrderToCookie = (order) => {
+    try {
+        // Get existing orders from cookie
+        let orders = [];
+        const ordersCookie = getCookie('orders');
+        
+        if (ordersCookie) {
+            orders = JSON.parse(ordersCookie);
+        }
+        
+        // Add new order
+        orders.push(order);
+        
+        // Save updated orders to cookie
+        document.cookie = `orders=${JSON.stringify(orders)}; path=/; max-age=2592000`; // 30 days
+    } catch (error) {
+        console.error('Error saving order to cookie:', error);
+    }
+};
+
+// Function to get cookie value by name
+const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
 };
 </script>
 
@@ -469,59 +617,164 @@ const submitBooking = () => {
     justify-content: space-between
 
 // Date and time selection
-.date-selection
-    display: flex
-    flex-wrap: wrap
-    gap: 10px
-    margin-bottom: 20px
-
-.date-option
-    background: $white
-    border-radius: $radius
-    padding: 10px 15px
-    cursor: pointer
-    transition: all 0.3s ease
-    border: 2px solid transparent
-    flex: 1
+.date-picker-container
     display: flex
     justify-content: center
-    align-items: center
-    min-width: 150px
-    max-width: calc(25% - 10px)
-    text-align: center
+    width: 100%
     
-    &:hover
-        transform: translateY(-3px)
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1)
-    
-    &--selected
-        border-color: $black
-        background: rgba(255, 255, 255, 0.9)
+    .custom-datepicker
+        width: 100%
+        
+        // Custom styles for v-calendar
+        :deep(.vc-container)
+            border: none
+            border-radius: $radius
+            background: $white
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05)
+            min-width: 0
+            width: 100%
+            padding: 15px
+            
+        :deep(.vc-header)
+            padding: 20px 15px
+            
+        :deep(.vc-arrow)
+            padding: 12px
+            border-radius: 50%
+            background: $main-color
+            
+        :deep(.vc-arrow-icon)
+            width: 26px
+            height: 26px
+            
+        // Desktop styles (default)
+        :deep(.vc-day-content)
+            font-weight: 500
+            height: 65px
+            width: 65px
+            border-radius: $radius
+            font-size: 24px
+            display: flex
+            align-items: center
+            justify-content: center
+            
+        :deep(.vc-day)
+            padding: 6px
+            
+        :deep(.vc-weekday)
+            font-size: 20px
+            padding: 8px 0
+            font-weight: 600
+        
+        :deep(.vc-title)
+            font-size: 26px
+            font-weight: 600
+            padding: 10px 0
+        
+        :deep(.vc-highlight-content-solid)
+            width: 65px
+            height: 65px
+            
+        :deep(.vc-highlight-content-outline)
+            width: 65px
+            height: 65px
+            
+        :deep(.vc-popover-content)
+            font-size: 18px
+            padding: 12px 15px
+            border-radius: $radius
+            
+        :deep(.vc-popover-content-wrapper)
+            margin-top: 10px
+        
+        // Saturday style
+        :deep(.vc-day[data-date].vc-day-box-center-center .vc-highlight-content-solid[style*="background-color: rgb(255, 152, 0)"])
+            opacity: 0.6 !important
+            
+        :deep(.vc-day[data-date].vc-day-box-center-center .vc-highlight-content-solid[style*="background-color: rgb(255, 152, 0)"] + .vc-day-content)
+            font-weight: bold
+            
+        :deep(.vc-day:hover .vc-day-content), :deep(.vc-day:active .vc-day-content), :deep(.vc-day:focus .vc-day-content)
+            background-color: $main-color
+            opacity: 0.5
+            
+        :deep(.vc-day.is-selected .vc-day-content)
+            background-color: $main-color
+            color: $black
+            font-weight: bold
+            
+        :deep(.vc-highlight-bg-solid)
+            opacity: 0.2
+            
+        :deep(.vc-highlight-bg-light)
+            background-color: $main-color
+            opacity: 0.7
+            
+        :deep(.vc-day-box-center-center)
+            font-weight: 600
+            
+        :deep(.is-today)
+            font-weight: 800
+            
+        :deep(.vc-day-popover)
+            background: $white
+            border: 1px solid $main-color
+            font-weight: 500
+            border-radius: $radius
+            
+        :deep(.vc-popover-caret)
+            border-color: $main-color !important
+            
+        :deep(.vc-nav-item:hover), :deep(.vc-nav-item:active), :deep(.vc-nav-item:focus)
+            background-color: $main-color
+            
+        :deep(.vc-nav-item.is-active)
+            background-color: $main-color
+            color: $black
+            
+        :deep(.vc-btn)
+            background-color: $main-color
+            color: $black
+            border-radius: $radius
+            
+            &:hover
+                background-color: darken($main-color, 10%)
+                
+        :deep(.vc-weeks)
+            min-width: 0
+            width: 100%
+            
+        :deep(.vc-weekday)
+            min-width: 0
+            width: 14.28%
+            
+        :deep(.vc-day)
+            min-width: 0
+            width: 14.28%
+            
+            // Keep popover active on mobile touch (using active pseudo-class)
+            &:active
+                .vc-day-popover-content
+                    visibility: visible
+                    opacity: 1
+                    transform: translateY(0)
+            
+        :deep(.vc-pane)
+            min-width: 0
+            width: 100%
+            
+        :deep(.vc-nav-container)
+            width: 100%
+            min-width: 0
 
-.time-title-container
-    background: $white
-    padding: 15px
-    border-radius: $radius
-    margin-bottom: 15px
-
-.time-title
-    margin: 0
-    font-weight: bold
-
-.time-slots
+.time-selection
     display: flex
-    flex-wrap: wrap
+    flex-direction: column
     gap: 10px
-
-.time-slot
-    background: $white
-    border-radius: $radius
-    padding: 8px 15px
-    cursor: pointer
-    
-    &--selected
-        background: $black !important
-        color: $white !important
+    &--unavailable
+        .time-title-container
+            background: #FFEBEE
+            border-left: 4px solid #F44336
 
 // Contact form
 .form-group
@@ -535,7 +788,6 @@ const submitBooking = () => {
     font-weight: 500
 
 .form-input
-    border: 1px solid $black
     width: 100%
 
 .submit-button
@@ -578,13 +830,14 @@ const submitBooking = () => {
 
 @include mobile        
     .form-step
-        padding: 20px
+        padding: 15px
         
     .master-item, .service-item
         flex: 1 0 100%
         
     .service-image
         height: 200px
+        
     .selected-summary
         flex-direction: column
         gap: 10px
@@ -595,4 +848,75 @@ const submitBooking = () => {
         
     .time-slot
         flex: 1 0 calc(33.333% - 10px)
+        font-size: 14px
+        padding: 6px 10px
+        
+        &:active
+            background: $main-color
+            border-color: $black
+    
+    .date-picker-container
+        .custom-datepicker
+            
+            :deep(.vc-day-content)
+                height: 28px
+                width: 28px
+                font-size: 12px
+                
+            :deep(.vc-header)
+                padding: 10px 5px
+                
+            :deep(.vc-title)
+                font-size: 14px
+                
+            :deep(.vc-weekday)
+                font-size: 12px
+                padding: 3px 0
+                
+            :deep(.vc-highlight-content-solid)
+                width: 28px
+                height: 28px
+                
+            :deep(.vc-highlight-content-outline)
+                width: 28px
+                height: 28px
+                
+            :deep(.vc-popover-content)
+                font-size: 12px
+                padding: 5px 8px
+                
+            :deep(.vc-day)
+                padding: 2px
+
+.time-title-container
+    background: $white
+    padding: 15px
+    border-radius: $radius
+
+.time-title
+    margin: 0
+    font-weight: bold
+
+.time-slots
+    display: flex
+    flex-wrap: wrap
+    gap: 10px
+
+.time-slot
+    background: $white
+    border-radius: $radius
+    padding: 8px 15px
+    cursor: pointer
+    border: 2px solid transparent
+    transition: all 0.2s ease
+    
+    &:hover
+        background: lighten($main-color, 5%)
+        border-color: $main-color
+    
+    &--selected
+        background: $main-color !important
+        color: $black !important
+        border-color: $black !important
+        font-weight: bold
 </style>

@@ -40,7 +40,6 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed, nextTick } from 'vue';
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
@@ -126,7 +125,13 @@ const closeReviewModal = () => {
 const submitReview = (newReview) => {
     // Here you would typically send the review to a server
     // For demo purposes, we'll just add it to the local array
-    reviews.value.push(newReview);
+    // Make sure rating is included and is a number
+    const reviewWithRating = {
+        ...newReview,
+        rating: Number(newReview.rating) || 5 // Default to 5 if not provided or invalid
+    };
+    
+    reviews.value.push(reviewWithRating);
     closeReviewModal();
     
     // Update swiper size after new review is added

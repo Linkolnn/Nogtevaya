@@ -49,9 +49,6 @@
                 <div class="contacts__block">
                     <h2 class="contacts__subtitle font-h3">Социальные сети</h2>
                     <div class="contacts__social">
-                        <NuxtLink to="#" class="contacts__social-link contacts__social-link--odnoklassniki">
-                            <IconOdnoklassniki class="contacts__social-icon" />
-                        </NuxtLink>
                         <NuxtLink to="#" class="contacts__social-link contacts__social-link--vk">
                             <IconVk class="contacts__social-icon" />
                         </NuxtLink>

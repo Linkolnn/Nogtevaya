@@ -13,6 +13,9 @@ export default defineNuxtConfig({
     '@services' : resolve(__dirname, '/services'),
     '@utils' : resolve(__dirname, '/utils'),
   },
+  routeRules: {
+    '/admin/**': { middleware: ['admin-auth'] }
+  },
   app: {
     head: {
       script: [

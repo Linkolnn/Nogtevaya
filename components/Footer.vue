@@ -10,7 +10,7 @@
                 <div class="footer__work-hours">
                     <h3 class="font-text_medium footer__subtitle">График работы</h3>
                     <p class="font-text_medium">Пн-Пт: с 09:00 до 17:00</p>
-                    <p class="font-text_medium">Суббота: с 11:00 до 15:00</p>
+                    <p class="font-text_medium">Суббота: с 11:00 до 17:00</p>
                 </div>
             </div>
             
@@ -26,8 +26,8 @@
                     <NuxtLink to="#" class="footer__messenger-link">
                         <IconViber class="footer__messenger-icon" />
                     </NuxtLink>
-                    <NuxtLink to="#" class="footer__messenger-link">
-                        <IconTelegram class="footer__messenger-icon" />
+                    <NuxtLink to="#" class="footer__messenger-link footer__messenger-link--tg">
+                        <IconTelegram class="footer__messenger-icon" filled/>
                     </NuxtLink>
                 </div>
             </div>
@@ -36,9 +36,6 @@
                 <div class="footer__social">
                     <h3 class="font-text_medium footer__subtitle">Наши соц. сети</h3>
                     <div class="footer__social-icons">
-                        <NuxtLink to="#" class="footer__social-link footer__social-link--odnoklassniki">
-                            <IconOdnoklassniki class="footer__social-icon" />
-                        </NuxtLink>
                         <NuxtLink to="#" class="footer__social-link footer__social-link--vk">
                             <IconVk class="footer__social-icon" />
                         </NuxtLink>
@@ -116,6 +113,10 @@
         justify-content: center
         opacity: 0.8
         transition: all 0.3s ease
+
+        &--tg
+            path
+                fill: $black
         
         &:hover
             opacity: 1

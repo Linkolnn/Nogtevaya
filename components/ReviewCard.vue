@@ -2,6 +2,13 @@
   <article class="review-card">
     <img v-if="review.photo" :src="review.photo" alt="" class="review-photo" />
     <h3 class="reviewer-name font-h4">{{ review.name }}</h3>
+    <div class="review-stars">
+      <div v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= review.rating }">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+        </svg>
+      </div>
+    </div>
     <p class="review-text font-text_medium">{{ review.text }}</p>
   </article>
 </template>
@@ -42,6 +49,17 @@ defineProps(['review']);
   color: $black
   width: 100%
   word-wrap: break-word
+
+.review-stars
+  display: flex
+  justify-content: center
+
+.star
+  color: #D1D1D1
+  margin: 0 2px
+  
+  &.filled
+    color: #FFD700
 
 .review-text
   color: #555

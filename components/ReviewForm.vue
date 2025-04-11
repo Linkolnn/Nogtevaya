@@ -15,6 +15,23 @@
       </div>
       
       <div class="form-group">
+        <label class="font-text_small">Ваша оценка</label>
+        <div class="rating-selector">
+          <div 
+            v-for="star in 5" 
+            :key="star" 
+            class="star" 
+            :class="{ 'active': star <= formData.rating }"
+            @click="setRating(star)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
         <label for="reviewText" class="font-text_small">Ваш отзыв</label>
         <textarea 
           id="reviewText" 
@@ -58,7 +75,8 @@ const emit = defineEmits(['submit']);
 const formData = ref({
   name: '',
   text: '',
-  photo: ''
+  photo: '',
+  rating: 5 // Default rating set to 5
 });
 
 const photoPreview = ref(null);
@@ -73,6 +91,10 @@ const handlePhotoUpload = (event) => {
     };
     reader.readAsDataURL(file);
   }
+};
+
+const setRating = (rating) => {
+  formData.value.rating = rating;
 };
 
 const removePhoto = () => {
@@ -92,7 +114,8 @@ const resetForm = () => {
   formData.value = {
     name: '',
     text: '',
-    photo: ''
+    photo: '',
+    rating: 5
   };
   photoPreview.value = null;
 };
@@ -138,6 +161,21 @@ const resetForm = () => {
   label.btn
     padding: 5px 0px
     text-align: center
+
+.rating-selector
+  display: flex
+  justify-content: center
+  margin: 10px 0
+
+.star
+  cursor: pointer
+  color: #D1D1D1
+  margin: 0 5px
+  transition: all 0.2s ease
+  
+  &:hover, &.active
+    color: #FFD700
+    transform: scale(1.2)
 
 .photo-preview
   text-align: center
