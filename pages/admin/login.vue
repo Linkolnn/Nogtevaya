@@ -57,20 +57,21 @@ const isAuthenticated = () => {
 
 // Перенаправление, если уже авторизован
 if (process.client && isAuthenticated()) {
-    router.push('/7a8b9c0d1e2f3g');
+    router.push('/admin');
 }
 
 const handleLogin = () => {
     // Проверяем учетные данные из .env
-    const adminLogin = process.env.ADMIN_LOGIN || 'admin';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin1234';
+    const config = useRuntimeConfig();
+    const adminLogin = config.public.ADMIN_LOGIN;
+    const adminPassword = config.public.ADMIN_PASSWORD;
     
     if (login.value === adminLogin && password.value === adminPassword) {
         // Создаем куки для сессии админа
         document.cookie = "adminAuthenticated=true; path=/; max-age=3600"; // 1 час
         
         // Редирект на главную страницу админа
-        router.push('/7a8b9c0d1e2f3g');
+        router.push('/admin');
     } else {
         error.value = 'Неверный логин или пароль';
     }

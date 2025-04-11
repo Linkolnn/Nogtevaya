@@ -60,5 +60,11 @@ export default defineNuxtConfig({
         external: []
       }
     }
+  },
+  runtimeConfig: {
+    public: {
+      ADMIN_LOGIN: process.env.ADMIN_LOGIN,
+      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD
+    }
   }
 })
